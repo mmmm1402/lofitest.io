@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winter Study Room - Pomodoro Timer with Lofi Girl</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Comfortaa:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', 'Comfortaa', sans-serif;
+            background: linear-gradient(135deg, #F5E6D3 0%, #E8D5C4 50%, #F0E2D0 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* クリスマスカラーパレット */
+        :root {
+            --christmas-red: #C41E3A;
+            --christmas-green: #165B33;
+            --christmas-gold: #D4AF37;
+            --warm-white: #FFF8F0;
+            --wood-brown: #8B6F47;
+            --light-glow: #FFD700;
+        }
+
+        /* 雪のアニメーション */
+        .snow {
+            position: fixed;
+            top: -10px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        @keyframes snowfall {
+            0% {
+                transform: translateY(-10px) translateX(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) translateX(30px);
+                opacity: 0.3;
+            }
+        }
+
+        .snowflake {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: snowfall linear infinite;
+        }
+
+        /* ライトのグロー効果 */
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.5);
+            }
+        }
+
+        .light-bulb {
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        /* 木製パネル */
+        .wood-panel {
+            background: linear-gradient(135deg, #A0826D 0%, #8B6F47 50%, #9A7B5C 100%);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            position: relative;
+            padding: 2rem;
+        }
+
+        .wood-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 10px,
+                rgba(0, 0, 0, 0.03) 10px,
+                rgba(0, 0, 0, 0.03) 11px
+            );
+            border-radius: 20px;
+            pointer-events: none;
+        }
+
+        /* ボタンスタイル */
+        .btn-warm {
+            background: linear-gradient(135deg, var(--christmas-red), #E63946);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(196, 30, 58, 0.3);
+        }
+
+        .btn-warm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(196, 30, 58, 0.5);
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, var(--christmas-green), #2D8659);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(22, 91, 51, 0.3);
+        }
+
+        .btn-green:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(22, 91, 51, 0.5);
+        }
+
+        /* YouTube選択カード */
+        .stream-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 3px solid transparent;
+        }
+
+        .stream-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(196, 30, 58, 0.3);
+            border-color: var(--christmas-red);
+        }
+
+        /* タイマー表示 */
+        .timer-display {
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--warm-white);
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            font-family: 'Comfortaa', sans-serif;
+            letter-spacing: 0.1em;
+        }
+
+        /* プリセットボタン */
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .preset-btn:hover, .preset-btn.active {
+            background: rgba(255, 255, 255, 0.4);
+            border-color: var(--light-glow);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
+        /* デコレーションライト */
+        .decoration-lights {
+            position: absolute;
+            top: -10px;
+            left: 0;
+            right: 0;
+            height: 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .decoration-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: glow 1.5s ease-in-out infinite;
+        }
+
+        .decoration-light:nth-child(1) { background: var(--christmas-red); animation-delay: 0s; }
+        .decoration-light:nth-child(2) { background: var(--christmas-green); animation-delay: 0.3s; }
+        .decoration-light:nth-child(3) { background: var(--christmas-gold); animation-delay: 0.6s; }
+        .decoration-light:nth-child(4) { background: var(--christmas-red); animation-delay: 0.9s; }
+        .decoration-light:nth-child(5) { background: var(--christmas-green); animation-delay: 1.2s; }
+
+        /* YouTube埋め込み */
+        .youtube-container {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: 4px solid var(--wood-brown);
+        }
+
+        /* カスタム入力 */
+        .custom-input {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            width: 80px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .custom-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* 進捗バー */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--christmas-gold), var(--light-glow));
+            border-radius: 10px;
+            transition: width 1s linear;
+            box-shadow: 0 0 10px var(--light-glow);
+        }
+
+        /* タイトル装飾 */
+        .title-decoration {
+            color: var(--christmas-red);
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        /* モード表示 */
+        .mode-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .mode-focus {
+            background: linear-gradient(135deg, var(--christmas-red), #E63946);
+            color: white;
+        }
+
+        .mode-break {
+            background: linear-gradient(135deg, var(--christmas-green), #2D8659);
+            color: white;
+        }
+
+        /* レスポンシブ調整 */
+        @media (max-width: 1024px) {
+            .timer-display {
+                font-size: 3.5rem;
+            }
+        }
+
+        /* スマホ横画面対応 */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .timer-display {
+                font-size: 2.5rem;
+            }
+
+            .title-decoration {
+                font-size: 1.5rem;
+            }
+
+            .wood-panel {
+                padding: 1rem;
+            }
+
+            .custom-input {
+                width: 60px;
+                font-size: 0.9rem;
+            }
+
+            .btn-warm, .btn-green {
+                padding: 0.4rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            .preset-btn {
+                padding: 0.3rem 0.7rem;
+                font-size: 0.8rem;
+            }
+
+            .mode-badge {
+                padding: 0.3rem 1rem;
+                font-size: 0.8rem;
+                margin-bottom: 0.5rem;
+            }
+
+            h2 {
+                font-size: 1rem !important;
+                margin-bottom: 0.3rem !important;
+            }
+
+            /* 横画面では2カラムレイアウト */
+            #main-screen > .grid {
+                grid-template-columns: 1fr 1fr !important;
+            }
+
+            /* YouTube埋め込みのサイズ調整 */
+            .youtube-container {
+                height: 100% !important;
+            }
+        }
+
+        /* スマホ縦画面対応 */
+        @media (max-width: 768px) and (orientation: portrait) {
+            .timer-display {
+                font-size: 2rem;
+            }
+
+            .title-decoration {
+                font-size: 1.8rem;
+            }
+
+            .wood-panel {
+                padding: 0.75rem;
+            }
+
+            .custom-input {
+                width: 50px;
+                font-size: 0.9rem;
+                padding: 0.3rem 0.5rem;
+            }
+
+            .btn-warm, .btn-green {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .preset-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+            }
+
+            .mode-badge {
+                padding: 0.3rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            h2 {
+                font-size: 1.2rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 雪のアニメーション -->
+    <div class="snow" id="snow-container"></div>
+
+    <!-- トップ画面（Lofi Girl選択） -->
+    <div id="selection-screen" class="min-h-screen flex items-center justify-center p-8">
+        <div class="max-w-6xl w-full">
+            <div class="text-center mb-12">
+                <h1 class="title-decoration">❄️ Winter Study Room ☕</h1>
+                <p class="text-2xl text-gray-700 font-medium">今日はどれ聴く？</p>
+                <p class="text-gray-600 mt-2">お気に入りのLofi配信を選んでね</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 指定動画1 -->
+                <div class="stream-card" onclick="selectStream('C4qJeIjNd2U')">
+                    <img src="https://img.youtube.com/vi/C4qJeIjNd2U/maxresdefault.jpg" alt="Lofi Stream 1" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-2">🎵 Lofi Live 1</h3>
+                        <p class="text-sm text-gray-600">24/7 chill beats</p>
+                    </div>
+                </div>
+
+                <!-- 指定動画2 -->
+                <div class="stream-card" onclick="selectStream('jfKfPfyJRdk')">
+                    <img src="https://img.youtube.com/vi/jfKfPfyJRdk/maxresdefault.jpg" alt="Lofi Stream 2" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-2">🌙 Lofi Live 2</h3>
+                        <p class="text-sm text-gray-600">Study & Relax</p>
+                    </div>
+                </div>
+
+                <!-- 指定動画3 -->
+                <div class="stream-card" onclick="selectStream('6gVgsOX3d_I')">
+                    <img src="https://img.youtube.com/vi/6gVgsOX3d_I/maxresdefault.jpg" alt="Lofi Stream 3" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-2">🎹 Lofi Live 3</h3>
+                        <p class="text-sm text-gray-600">Chill & Focus</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- カスタム動画選択 -->
+            <div class="text-center mt-8">
+                <div class="inline-block bg-white rounded-2xl p-6 shadow-lg">
+                    <h3 class="font-semibold text-lg mb-3 text-gray-800">🎧 好きな動画を選ぶ</h3>
+                    <p class="text-sm text-gray-600 mb-4">YouTubeのURLを貼り付けてね</p>
+                    <div class="flex gap-3 items-center justify-center flex-wrap">
+                        <input 
+                            type="text" 
+                            id="custom-video-url" 
+                            placeholder="https://www.youtube.com/watch?v=..." 
+                            class="px-4 py-2 border-2 border-gray-300 rounded-lg w-80 focus:outline-none focus:border-red-500 transition"
+                        >
+                        <button 
+                            onclick="selectCustomVideo()" 
+                            class="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition transform hover:-translate-y-1"
+                        >
+                            再生する ▶
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-6 text-gray-600">
+                <p>💡 ヒント: タイマーと一緒に集中力アップ！</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- メイン画面（タイマー + YouTube） -->
+    <div id="main-screen" class="hidden h-screen overflow-hidden flex flex-col p-2 sm:p-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 h-full">
+            <!-- 左側：ポモドーロタイマー -->
+            <div class="flex items-center justify-center p-1 sm:p-4 overflow-auto">
+                <div class="wood-panel w-full max-w-lg relative">
+                    <!-- デコレーションライト -->
+                    <div class="decoration-lights">
+                        <div class="decoration-light"></div>
+                        <div class="decoration-light"></div>
+                        <div class="decoration-light"></div>
+                        <div class="decoration-light"></div>
+                        <div class="decoration-light"></div>
+                    </div>
+
+                    <div class="text-center">
+                        <h2 class="text-2xl font-bold text-white mb-4">🎄 ポモドーロタイマー ⏰</h2>
+                        
+                        <!-- モード表示 -->
+                        <div class="mode-badge mode-focus" id="mode-badge">集中タイム</div>
+
+                        <!-- タイマー表示 -->
+                        <div class="timer-display" id="timer-display">25:00</div>
+
+                        <!-- 進捗バー -->
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill" style="width: 100%"></div>
+                        </div>
+
+                        <!-- プリセットボタン -->
+                        <div class="mt-6 mb-4">
+                            <p class="text-white text-sm mb-2">プリセット時間</p>
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                <button class="preset-btn active" onclick="setPreset(25)">25分</button>
+                                <button class="preset-btn" onclick="setPreset(5)">5分</button>
+                                <button class="preset-btn" onclick="setPreset(15)">15分</button>
+                            </div>
+                        </div>
+
+                        <!-- カスタム時間入力 -->
+                        <div class="mb-6">
+                            <p class="text-white text-sm mb-2">カスタム時間</p>
+                            <div class="flex gap-2 justify-center items-center">
+                                <input type="number" class="custom-input" id="custom-minutes" placeholder="分" min="1" max="120">
+                                <span class="text-white">分</span>
+                                <button class="btn-green" onclick="setCustomTime()">設定</button>
+                            </div>
+                        </div>
+
+                        <!-- コントロールボタン -->
+                        <div class="flex gap-4 justify-center">
+                            <button class="btn-warm" id="start-btn" onclick="toggleTimer()">
+                                <span id="btn-text">開始</span>
+                            </button>
+                            <button class="btn-green" onclick="resetTimer()">リセット</button>
+                        </div>
+
+                        <!-- 戻るボタン -->
+                        <div class="mt-6">
+                            <button class="text-white text-sm underline hover:text-gray-200" onclick="backToSelection()">
+                                ← 配信を変更する
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：YouTube埋め込み -->
+            <div class="flex items-center justify-center p-1 sm:p-4">
+                <div class="youtube-container w-full aspect-video lg:h-[600px]">
+                    <iframe 
+                        id="youtube-player"
+                        width="100%" 
+                        height="100%" 
+                        src="" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- タイマー終了音（控えめなベル音） -->
+    <audio id="timer-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFgH55dHFta2l
+        kb2djX1tXU09LREVBPT05NTIuKicjHxsXEw8LBwMAAP3564r9wOHCxcfJy83P0dPV19nb3d/h4+Xl5+no6err7O3u7+/w8fHy8vP09PT09
+        fX19fb29vb39/f4+Pj4+Pn5+fn5+vr6+vr6+vv7+/v7+/v7/Pz8/Pz8/P39/f39/f39/f39/f39/f39/f39/f39/f39/fz8/Pz8/Pz7+/v7+
+        /v7+vr6+vr6+vr5+fn5+fn4+Pj4+Pf39/f39vb29vb19fX19PT09PTz8/Ly8vHx8O/v7u7t7Ovq6ejo5+Xl4+Hf3dvZ19XT0c/NzcnHxcPBvru
+        4trSxr62qp6ShnpuYlZKPjIl/" type="audio/wav">
+    </audio>
+
+    <script>
+        // グローバル変数
+        let timer;
+        let timeLeft = 25 * 60; // 秒単位
+        let totalTime = 25 * 60;
+        let isRunning = false;
+        let currentMode = 'focus'; // 'focus' or 'break'
+        let wakeLock = null;
+
+        // 雪のアニメーション生成
+        function createSnowflakes() {
+            const container = document.getElementById('snow-container');
+            const snowflakeCount = 50;
+
+            for (let i = 0; i < snowflakeCount; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.style.left = Math.random() * 100 + '%';
+                snowflake.style.animationDuration = (Math.random() * 3 + 5) + 's';
+                snowflake.style.animationDelay = Math.random() * 5 + 's';
+                snowflake.style.width = (Math.random() * 3 + 2) + 'px';
+                snowflake.style.height = snowflake.style.width;
+                container.appendChild(snowflake);
+            }
+        }
+
+        // 配信選択
+        function selectStream(videoId) {
+            document.getElementById('selection-screen').classList.add('hidden');
+            document.getElementById('main-screen').classList.remove('hidden');
+            document.getElementById('youtube-player').src = 
+                `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
+            requestWakeLock();
+        }
+
+        // カスタム動画選択
+        function selectCustomVideo() {
+            const url = document.getElementById('custom-video-url').value.trim();
+            
+            if (!url) {
+                alert('YouTubeのURLを入力してください！');
+                return;
+            }
+
+            // YouTube URLからVideo IDを抽出
+            let videoId = null;
+            
+            // 様々なYouTube URL形式に対応
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/,
+                /youtube\.com\/embed\/([^&\s]+)/,
+                /youtube\.com\/v\/([^&\s]+)/
+            ];
+
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match && match[1]) {
+                    videoId = match[1];
+                    break;
+                }
+            }
+
+            if (!videoId) {
+                alert('有効なYouTube URLを入力してください\n例: https://www.youtube.com/watch?v=xxxxx');
+                return;
+            }
+
+            // 動画を再生
+            selectStream(videoId);
+            document.getElementById('custom-video-url').value = '';
+        }
+
+        // 選択画面に戻る
+        function backToSelection() {
+            if (isRunning) {
+                if (!confirm('タイマーが実行中です。本当に戻りますか？')) {
+                    return;
+                }
+                resetTimer();
+            }
+            document.getElementById('main-screen').classList.add('hidden');
+            document.getElementById('selection-screen').classList.remove('hidden');
+            document.getElementById('youtube-player').src = '';
+            releaseWakeLock();
+        }
+
+        // プリセット時間設定
+        function setPreset(minutes) {
+            if (isRunning) {
+                if (!confirm('タイマーが実行中です。リセットしますか？')) {
+                    return;
+                }
+                resetTimer();
+            }
+
+            // アクティブクラスの切り替え
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            timeLeft = minutes * 60;
+            totalTime = minutes * 60;
+            updateDisplay();
+            updateProgress();
+        }
+
+        // カスタム時間設定
+        function setCustomTime() {
+            const minutes = parseInt(document.getElementById('custom-minutes').value);
+            if (!minutes || minutes < 1 || minutes > 120) {
+                alert('1〜120分の範囲で入力してください');
+                return;
+            }
+
+            if (isRunning) {
+                if (!confirm('タイマーが実行中です。リセットしますか？')) {
+                    return;
+                }
+                resetTimer();
+            }
+
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            timeLeft = minutes * 60;
+            totalTime = minutes * 60;
+            updateDisplay();
+            updateProgress();
+            document.getElementById('custom-minutes').value = '';
+        }
+
+        // タイマー開始/停止
+        function toggleTimer() {
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        // タイマー開始
+        function startTimer() {
+            isRunning = true;
+            document.getElementById('btn-text').textContent = '一時停止';
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                updateProgress();
+
+                if (timeLeft <= 0) {
+                    timerComplete();
+                }
+            }, 1000);
+        }
+
+        // タイマー一時停止
+        function pauseTimer() {
+            isRunning = false;
+            clearInterval(timer);
+            document.getElementById('btn-text').textContent = '再開';
+        }
+
+        // タイマーリセット
+        function resetTimer() {
+            isRunning = false;
+            clearInterval(timer);
+            timeLeft = totalTime;
+            updateDisplay();
+            updateProgress();
+            document.getElementById('btn-text').textContent = '開始';
+        }
+
+        // タイマー完了
+        function timerComplete() {
+            clearInterval(timer);
+            isRunning = false;
+            
+            // 控えめな通知音を再生
+            const sound = document.getElementById('timer-sound');
+            sound.play();
+
+            // モード切り替え
+            if (currentMode === 'focus') {
+                currentMode = 'break';
+                timeLeft = 5 * 60;
+                totalTime = 5 * 60;
+                document.getElementById('mode-badge').textContent = '休憩タイム';
+                document.getElementById('mode-badge').className = 'mode-badge mode-break';
+                alert('🎉 お疲れ様！休憩タイムです ☕');
+            } else {
+                currentMode = 'focus';
+                timeLeft = 25 * 60;
+                totalTime = 25 * 60;
+                document.getElementById('mode-badge').textContent = '集中タイム';
+                document.getElementById('mode-badge').className = 'mode-badge mode-focus';
+                alert('💪 休憩終了！集中タイムです 📚');
+            }
+
+            updateDisplay();
+            updateProgress();
+            document.getElementById('btn-text').textContent = '開始';
+        }
+
+        // 表示更新
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timer-display').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 進捗バー更新
+        function updateProgress() {
+            const progress = (timeLeft / totalTime) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+        }
+
+        // Wake Lock API（画面オン維持）
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock activated');
+                }
+            } catch (err) {
+                console.log('Wake Lock error:', err);
+            }
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock) {
+                wakeLock.release();
+                wakeLock = null;
+            }
+        }
+
+        // ページ読み込み時の初期化
+        window.addEventListener('load', () => {
+            createSnowflakes();
+            updateDisplay();
+        });
+
+        // ページ離脱時のWake Lock解放
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && document.getElementById('main-screen').classList.contains('hidden') === false) {
+                requestWakeLock();
+            }
+        });
+    </script>
+</body>
+</html>
